@@ -28,6 +28,7 @@ VMAGINE_DOWNLOAD_URL = "https://www.cloudbase.it/v-magine"
 VMAGINE_GITHUB_URL = "https://github.com/cloudbase/v-magine"
 VMAGINE_ISSUES_URL = "https://github.com/cloudbase/v-magine/issues"
 VMAGINE_QUESTIONS_URL = "http://ask.cloudbase.it"
+CORIOLIS_URL = "https://cloudbase.it/coriolis"
 
 
 class _VMConsoleThread(threading.Thread):
@@ -379,15 +380,6 @@ class Worker(object):
         else:
             raise NotImplementedError()
 
-    def _get_fip_range_data(self):
-        fip_subnet = utils.get_random_ipv4_subnet()
-        fip_range = "%s/24" % fip_subnet
-        fip_gateway = fip_subnet[:-1] + "1"
-        fip_range_start = fip_subnet[:-1] + "2"
-        fip_range_end = fip_subnet[:-1] + "254"
-        fip_gateway = fip_subnet[:-1] + "1"
-        return (fip_range, fip_range_start, fip_range_end, fip_gateway)
-
     def get_compute_nodes(self):
         try:
             self._start_progress_status('Retrieving compute nodes info...')
@@ -424,10 +416,10 @@ class Worker(object):
                 cpu_count,
                 self._dep_actions.get_openstack_vm_recommended_vcpu_count())
 
-            (fip_range,
-             fip_range_start,
-             fip_range_end,
-             fip_gateway) = self._get_fip_range_data()
+            fip_range = None
+            fip_range_start = None
+            fip_range_end = None
+            fip_gateway = None
 
             curr_user = self._dep_actions.get_current_user()
 
@@ -619,6 +611,9 @@ class Worker(object):
     def open_questions_url(self):
         self._open_url(VMAGINE_QUESTIONS_URL)
 
+    def open_coriolis_url(self):
+        self._open_url(CORIOLIS_URL)
+
     def open_controller_ssh(self):
         try:
             self._start_progress_status('Opening OpenStack SSH console...')
@@ -770,17 +765,106 @@ class Worker(object):
         finally:
             self._stop_progress_status()
 
+    @staticmethod
+    def _validate_single_ip_address(ip_address, error_msg):
+        try:
+            ip = netaddr.IPAddress(ip_address)
+            if ip.is_netmask() or str(ip) != ip_address:
+                raise exceptions.InvalidIPAddressException()
+            return ip
+        except Exception:
+            raise exceptions.InvalidIPAddressException(
+                error_msg % ip_address)
+
+    @staticmethod
+    def _validate_name_servers(name_servers, max_name_servers=None):
+        if not name_servers:
+            raise exceptions.BaseVMagineException(
+                "At least one name server is required")
+
+        if max_name_servers and len(name_servers) > max_name_servers:
+            raise exceptions.BaseVMagineException(
+                "At most two name servers can be specified")
+
+        for name_server in name_servers:
+            if not utils.is_valid_hostname(name_server):
+                Worker._validate_single_ip_address(
+                    name_server, "Invalid name server: %s")
+
+    def validate_openstack_networking_config(self, fip_range, fip_range_start,
+                                             fip_range_end, fip_gateway,
+                                             fip_name_servers):
+        LOG.debug("validate_openstack_networking_config called")
+        try:
+            LOG.debug("fip_range: %s", fip_range)
+            try:
+                ip_range = netaddr.IPNetwork(fip_range)
+                if (ip_range.ip != ip_range.network or
+                        ip_range.size == 1 or
+                        ip_range.ip == ip_range.netmask or
+                        str(ip_range.cidr) != fip_range):
+                    raise exceptions.InvalidIPAddressException()
+            except Exception:
+                raise exceptions.InvalidIPAddressException(
+                    "Invalid IP range: %s. The network needs to be "
+                    "in CIDR notation, e.g. 192.168.0.0/24" % fip_range)
+
+            LOG.debug("fip_range_start: %s", fip_range_start)
+            ip_start = self._validate_single_ip_address(
+                fip_range_start, "Invalid range start IP address: %s")
+
+            if ip_start not in ip_range:
+                raise exceptions.InvalidIPAddressException(
+                    "The range start IP does not belong to the range "
+                    "network: %s" % fip_range_start)
+
+            LOG.debug("fip_range_end: %s", fip_range_end)
+            ip_end = self._validate_single_ip_address(
+                fip_range_end, "Invalid range end IP address: %s")
+
+            if ip_end not in ip_range:
+                raise exceptions.InvalidIPAddressException(
+                    "The range end IP does not belong to the range "
+                    "network: %s" % fip_range_start)
+
+            if ip_end <= ip_start:
+                raise exceptions.InvalidIPAddressException(
+                    "The range end IP must be higher than the start IP")
+
+            LOG.debug("fip_gateway: %s", fip_gateway)
+            ip_gateway = self._validate_single_ip_address(
+                fip_gateway, "Invalid gateway IP address: %s")
+
+            if ip_start <= ip_gateway <= ip_end:
+                raise exceptions.InvalidIPAddressException(
+                    "The gateway IP can not be in the "
+                    "%(fip_range_start)s-%(fip_range_end)s range" %
+                    {"fip_range_start": fip_range_start,
+                     "fip_range_end": fip_range_end})
+
+            LOG.debug("fip_name_servers: %s", fip_name_servers)
+            self._validate_name_servers(fip_name_servers)
+
+            return True
+        except Exception as ex:
+            LOG.exception(ex)
+            self._error_callback(ex)
+
     def validate_controller_config(self, mgmt_ext_dhcp, mgmt_ext_ip,
                                    mgmt_ext_gateway, mgmt_ext_name_servers,
                                    use_proxy, proxy_url, proxy_username,
                                    proxy_password):
+        LOG.debug("validate_controller_config called")
         try:
-            LOG.debug("validate_controller_config called")
             if not mgmt_ext_dhcp:
                 LOG.debug("mgmt_ext_ip: %s", mgmt_ext_ip)
                 try:
-                    ip = netaddr.IPNetwork(mgmt_ext_ip)
-                    if ip.ip == ip.network or ip.size == 1:
+                    ip_address = mgmt_ext_ip.split("/")[0]
+                    ip = self._validate_single_ip_address(ip_address, "")
+                    ip_net = netaddr.IPNetwork(mgmt_ext_ip)
+                    net_bits = ip_net.netmask.netmask_bits()
+                    if (ip == ip_net.network or
+                            "%s/%d" % (ip, net_bits) != mgmt_ext_ip):
                         raise exceptions.InvalidIPAddressException()
                 except Exception:
                     raise exceptions.InvalidIPAddressException(
@@ -788,34 +872,11 @@ class Worker(object):
                         "in CIDR notation, e.g. 192.168.0.1/24" % mgmt_ext_ip)
 
                 LOG.debug("mgmt_ext_gateway: %s", mgmt_ext_gateway)
-                try:
-                    ip = netaddr.IPAddress(mgmt_ext_gateway)
-                    if ip.is_netmask():
-                        raise exceptions.InvalidIPAddressException()
-                except Exception:
-                    raise exceptions.InvalidIPAddressException(
-                        "Invalid gateway IP address: %s" %
-                        mgmt_ext_gateway)
+                self._validate_single_ip_address(
+                    mgmt_ext_gateway, "Invalid gateway IP address: %s")
 
                 LOG.debug("mgmt_ext_name_servers: %s", mgmt_ext_name_servers)
-
-                if not mgmt_ext_name_servers:
-                    raise exceptions.BaseVMagineException(
-                        "At least one name server is required")
-
-                if len(mgmt_ext_name_servers) > 2:
-                    raise exceptions.BaseVMagineException(
-                        "At most two name servers can be specified")
-
-                for name_server in mgmt_ext_name_servers:
-                    if not validators.domain(name_server):
-                        try:
-                            ip = netaddr.IPAddress(name_server)
-                            if ip.is_netmask():
-                                raise exceptions.InvalidIPAddressException()
-                        except Exception:
-                            raise exceptions.InvalidIPAddressException(
-                                "Invalid name server: %s" % name_server)
+                self._validate_name_servers(mgmt_ext_name_servers, 2)
 
             if use_proxy:
                 LOG.debug("proxy_url: %s", proxy_url)

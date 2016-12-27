@@ -167,6 +167,14 @@ function disable_network_manager() {
     /sbin/chkconfig network on
 }
 
+function fix_extension_drivers_port_security() {
+    if [ ! $(openstack-config --get /etc/neutron/plugins/ml2/ml2_conf.ini ml2 extension_drivers 2> /dev/null | grep port_security) ]
+    then
+        openstack-config --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 extension_drivers port_security
+        /bin/systemctl restart neutron-server.service
+    fi
+}
+
 function create_nova_flavors() {
     exec_with_retry 5 0 /usr/bin/nova flavor-create m1.nano 42 96 1 1
     exec_with_retry 5 0 /usr/bin/nova flavor-create m1.micro 84 128 2 1
@@ -223,8 +231,9 @@ FIP_RANGE_END=$4
 FIP_RANGE_GATEWAY=$5
 FIP_RANGE_NAME_SERVERS=${@:6}
 
-RDO_RELEASE_RPM_URL=https://repos.fedorapeople.org/repos/openstack/openstack-mitaka/rdo-release-mitaka-5.noarch.rpm
-DASHBOARD_THEME_URL=https://github.com/cloudbase/openstack-dashboard-cloudbase-theme/releases/download/9.0.1/openstack-dashboard-cloudbase-theme-9.0.1-0.noarch.rpm
+RDO_RELEASE="newton"
+RDO_RELEASE_RPM_URL=https://rdoproject.org/repos/rdo-release.rpm
+DASHBOARD_THEME_URL=https://github.com/cloudbase/openstack-dashboard-cloudbase-theme/releases/download/10.0.0/openstack-dashboard-cloudbase-theme-10.0.0-0.noarch.rpm
 CIRROS_URL=https://www.cloudbase.it/downloads/cirros-0.3.4-x86_64.vhdx.gz
 ANSWER_FILE=packstack-answers.txt
 DATA_IFACE=data
@@ -271,7 +280,7 @@ fi
 SKIP_NTP_CONFIG=""
 exec_with_retry 5 0 /sbin/ntpdate pool.ntp.org || SKIP_NTP_CONFIG=1 && >&2 echo "ntpdate failed, make sure the NTP server is available"
 
-exec_with_retry 5 0 /usr/bin/yum install -y centos-release-openstack-mitaka yum-utils
+exec_with_retry 5 0 /usr/bin/yum install -y centos-release-openstack-$RDO_RELEASE yum-utils
 # Disabling due to 404 errors on the repo url
 /usr/bin/yum-config-manager --disable centos-ceph-jewel
 
@@ -374,6 +383,7 @@ export OS_AUTH_URL="http://$HOST_IP:5000/v2.0"
 
 remove_httpd_default_site
 disable_nova_compute
+fix_extension_drivers_port_security
 fix_cinder_chap_length
 fix_cinder_keystone_authtoken
 configure_public_subnet
