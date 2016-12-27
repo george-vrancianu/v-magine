@@ -703,6 +703,11 @@ function initUi() {
         return false;
     });
 
+    $('#followtwitter').click(function() {
+        // controller action here
+        return false;
+    })
+
     setPasswordValidation();
     initControllerMemSlider();
     initControllerVcpuSlider();

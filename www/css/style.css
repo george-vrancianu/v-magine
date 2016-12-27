@@ -1080,8 +1080,8 @@ input[type="range"]:hover ~ #rangevalue,input[type="range"]:active ~ #rangevalue
     margin-top: 14px;
 }
 .compute-nodes-header {
-    margin-bottom: 2px;
-    margin-top: 30px;
+    margin-bottom: 6px;
+    margin-top: 26px;
 }
 
 .compute-nodes-header ul {
@@ -1098,7 +1098,10 @@ input[type="range"]:hover ~ #rangevalue,input[type="range"]:active ~ #rangevalue
     color: #726484;
     font-size: 1.1rem;
 }
-
+.compute-nodes-list {
+    max-height: 94px;
+    overflow-y: auto;
+}
 .compute-nodes-list ul {
     color: #4D415D;
     font-weight: bold;
@@ -1127,7 +1130,7 @@ input[type="range"]:hover ~ #rangevalue,input[type="range"]:active ~ #rangevalue
     width: 25%;
 }
 .registered-nodes .compute-nodes-list ul li {
-
+    line-height: 30px !important;
     font-size: 1.1rem;
 }
 .registered-nodes .compute-nodes-header ul li {
@@ -1172,14 +1175,12 @@ input[type="range"]:hover ~ #rangevalue,input[type="range"]:active ~ #rangevalue
     color:#ffffff;
 }
 
-.registered-nodes{
-    height:453px;
-}
-
 .registered-nodes h6{
     color:#fff;
 }
-
+.registered-nodes h2 {
+    margin-top: 39px;
+}
 .hypervisor button{
     margin-left: 0px;
     border-radius: 5px;
@@ -1640,52 +1641,109 @@ input:not(.hide_validation):invalid {
 #wrap-control-panel h3{
     color: #007AFF;
     font-size: 18px;
+    margin: 0;
 }
 
 #wrap-control-panel h4{
     color:#fff;
+    margin-bottom: 0;
 }
 
 #control-panel-controller{
-    width:35%;
-    margin-top:60px;
+    width:52%;
+    margin-top:7px;
     position:relative;
 }
 
-#control-panel-controller .controller {
-    height: 433px;
+#control-panel-controller .controller h4{
+    margin-top: 23px;
 }
 
 #control-panel-nodes{
-    width:50%;
-    float:right;
-    margin-top:60px;
+    width:48%;
+    float: left;
+    margin-top:4px;
     position:relative;
 }
 #control-panel h2 {
     font-size: 2.5rem;
 }
 #control-panel .support-links p{
-    font-size: 18px;
+    font-size: 1.8rem;
 }
-#control-panel .buttons button {
-    width: 23%;
-    margin-right: 2.2%;
+#control-panel .support-links a {
+    color: #FFF;
 }
-#control-panel .buttons button#redeployopenstack {
+#control-panel .support-links a i {
+    color: #007AFF;
+    font-size: 115%;
+}
+#control-panel .control-buttons button {
+    width: 19.5rem;
+
+}
+#control-panel h6 {
+    font-size: 1.1rem;
+    margin-top: 0;
+}
+#control-panel h6 i {
+    margin-left: 6px
+}
+
+#control-panel #control-panel-controller button {
+    width: 17rem;
+    float: right;
+    letter-spacing: -0.52px;
+    margin-top: -9px;
+}
+#control-panel .registered-nodes button {
+    margin-top: -5px !important;
+}
+#control-panel button#removeopenstack {
+    background-color: #E30613;
+    border-color: #E30613;
+    margin-bottom: 15px;
+}
+#control-panel button#removeopenstack:hover {
+    background-color: #FFF;
+    border-color: #FFF;
+    color: #000;
+}
+#control-panel  button#redeployopenstack {
     background-color: #007AFF;
     border-color: #007AFF;
 }
-#control-panel .buttons button:hover, #control-panel .buttons button#redeployopenstack:hover {
+#control-panel  button:hover, #control-panel button#redeployopenstack:hover {
     color: #000;
     background-color: #FFF;
     border-color: #FFF;
 }
-#control-panel .buttons button:last-child {
-    margin-right: 0;
+
+#followtwitter {
+    display: block;
+    width: 19.5rem;
+    background: #FFFFFF;
+    border: 1px solid #FFFFFF;
+    border-radius: 4px;
+    font-size: 16px;
+    color: #007AFF;
+    letter-spacing: -0.48px;
+    line-height: 34px;
+    height: 35px;
+    text-align: center;
+    margin-bottom: 154px;
+    margin-top: 40px;
+}
+#followtwitter i{
+    margin: 6px -3px 0 10px;
+    font-size: 25px;
+    float: left;
+}
+#followtwitter:hover {
+    color: #000;
 }
 .metro #control-panel  .on-left {
-    margin-right: 8px;
+    margin-right: 10px;
 }
 
 #controllerip {
