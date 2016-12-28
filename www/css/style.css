@@ -1707,16 +1707,16 @@ input:not(.hide_validation):invalid {
 #control-panel button#removeopenstack:hover {
     background-color: #FFF;
     border-color: #FFF;
-    color: #000;
+    color: #E30613;
 }
 #control-panel  button#redeployopenstack {
     background-color: #007AFF;
     border-color: #007AFF;
 }
 #control-panel  button:hover, #control-panel button#redeployopenstack:hover {
-    color: #000;
-    background-color: #FFF;
-    border-color: #FFF;
+    color: #007AFF;
+    background-color: #EEE;
+    border-color: #EEE;
 }
 
 #followtwitter {
@@ -1740,7 +1740,9 @@ input:not(.hide_validation):invalid {
     float: left;
 }
 #followtwitter:hover {
-    color: #000;
+    color: #FFF;
+    background-color: #007AFF;
+    border-color: #007AFF;
 }
 .metro #control-panel  .on-left {
     margin-right: 10px;
